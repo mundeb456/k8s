@@ -1,0 +1,382 @@
+# Kubernetes Workload YAML Examples
+
+This document contains sample YAML files for the following Kubernetes workload resources:
+
+- ReplicationController (RC)
+- ReplicaSet (RS)
+- Deployment
+- StatefulSet
+- DaemonSet
+
+---
+
+# 1. ReplicationController (RC)
+
+## Purpose
+
+- Maintains the desired number of Pod replicas.
+- Legacy resource (mostly replaced by ReplicaSet and Deployment).
+
+### rc.yaml
+
+```yaml
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: nginx-rc
+spec:
+  replicas: 3
+
+  selector:
+    app: nginx
+
+  template:
+    metadata:
+      labels:
+        app: nginx
+
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+
+        ports:
+        - containerPort: 80
+```
+
+Apply:
+
+```bash
+kubectl apply -f rc.yaml
+```
+
+---
+
+# 2. ReplicaSet (RS)
+
+## Purpose
+
+- Ensures a specified number of Pod replicas are running.
+- Supports Label Selectors (`matchLabels` and `matchExpressions`).
+
+### rs.yaml
+
+```yaml
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: nginx-rs
+
+spec:
+  replicas: 3
+
+  selector:
+    matchLabels:
+      app: nginx
+
+  template:
+    metadata:
+      labels:
+        app: nginx
+
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+
+        ports:
+        - containerPort: 80
+```
+
+Apply:
+
+```bash
+kubectl apply -f rs.yaml
+```
+
+---
+
+# 3. Deployment
+
+## Purpose
+
+- Creates and manages ReplicaSets.
+- Supports Rolling Updates.
+- Supports Rollback.
+- Most commonly used workload object.
+
+### deployment.yaml
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: nginx-deployment
+
+spec:
+  replicas: 3
+
+  selector:
+    matchLabels:
+      app: nginx
+
+  template:
+    metadata:
+      labels:
+        app: nginx
+
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+
+        ports:
+        - containerPort: 80
+```
+
+Apply:
+
+```bash
+kubectl apply -f deployment.yaml
+```
+
+---
+
+# 4. StatefulSet
+
+## Purpose
+
+Used for:
+
+- Databases
+- Kafka
+- Cassandra
+- MongoDB
+- ZooKeeper
+
+Provides:
+
+- Stable Pod names
+- Stable DNS
+- Stable Storage
+
+---
+
+## Step 1: Create Headless Service
+
+### headless-service.yaml
+
+```yaml
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: nginx-headless
+
+spec:
+  clusterIP: None
+
+  selector:
+    app: nginx
+
+  ports:
+  - port: 80
+    targetPort: 80
+```
+
+Apply:
+
+```bash
+kubectl apply -f headless-service.yaml
+```
+
+---
+
+## Step 2: Create StatefulSet
+
+### statefulset.yaml
+
+```yaml
+apiVersion: apps/v1
+kind: StatefulSet
+
+metadata:
+  name: nginx-statefulset
+
+spec:
+  serviceName: nginx-headless
+
+  replicas: 3
+
+  selector:
+    matchLabels:
+      app: nginx
+
+  template:
+    metadata:
+      labels:
+        app: nginx
+
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+
+        ports:
+        - containerPort: 80
+```
+
+Apply:
+
+```bash
+kubectl apply -f statefulset.yaml
+```
+
+---
+
+# 5. DaemonSet
+
+## Purpose
+
+Runs exactly one Pod on every eligible Kubernetes node.
+
+Common use cases:
+
+- Fluentd
+- Prometheus Node Exporter
+- Filebeat
+- Monitoring Agents
+- Logging Agents
+
+### daemonset.yaml
+
+```yaml
+apiVersion: apps/v1
+kind: DaemonSet
+
+metadata:
+  name: nginx-daemonset
+
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+
+  template:
+    metadata:
+      labels:
+        app: nginx
+
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+
+        ports:
+        - containerPort: 80
+```
+
+Apply:
+
+```bash
+kubectl apply -f daemonset.yaml
+```
+
+---
+
+# Commands
+
+## Create Resources
+
+```bash
+kubectl apply -f rc.yaml
+
+kubectl apply -f rs.yaml
+
+kubectl apply -f deployment.yaml
+
+kubectl apply -f headless-service.yaml
+
+kubectl apply -f statefulset.yaml
+
+kubectl apply -f daemonset.yaml
+```
+
+---
+
+## View Resources
+
+```bash
+kubectl get rc
+
+kubectl get rs
+
+kubectl get deploy
+
+kubectl get pods
+
+kubectl get svc
+
+kubectl get statefulset
+
+kubectl get daemonset
+```
+
+---
+
+## Delete Resources
+
+```bash
+kubectl delete -f rc.yaml
+
+kubectl delete -f rs.yaml
+
+kubectl delete -f deployment.yaml
+
+kubectl delete -f headless-service.yaml
+
+kubectl delete -f statefulset.yaml
+
+kubectl delete -f daemonset.yaml
+```
+
+---
+
+# Comparison Table
+
+| Resource | Purpose | Rolling Update | Rollback | Stable Pod Name | One Pod Per Node |
+|-----------|---------|----------------|----------|-----------------|------------------|
+| ReplicationController | Maintains Pod replicas | ❌ | ❌ | ❌ | ❌ |
+| ReplicaSet | Maintains Pod replicas | ❌ | ❌ | ❌ | ❌ |
+| Deployment | Manages ReplicaSets | ✅ | ✅ | ❌ | ❌ |
+| StatefulSet | Stateful Applications | ✅ | ✅ | ✅ | ❌ |
+| DaemonSet | One Pod on every node | Limited | ❌ | ❌ | ✅ |
+
+---
+
+# Interview Tips
+
+### ReplicationController (RC)
+- Legacy controller.
+- Supports only equality-based selectors.
+- Replaced by ReplicaSet.
+
+### ReplicaSet (RS)
+- Maintains desired Pod replicas.
+- Supports set-based label selectors.
+- Usually managed by a Deployment.
+
+### Deployment
+- Most commonly used resource.
+- Supports rolling updates and rollbacks.
+- Automatically manages ReplicaSets.
+
+### StatefulSet
+- Used for stateful applications.
+- Requires a Headless Service.
+- Provides stable Pod names, DNS, and persistent storage.
+
+### DaemonSet
+- Schedules one Pod on every eligible node.
+- Ideal for logging, monitoring, and networking agents.
